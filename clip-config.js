@@ -50,11 +50,12 @@ window.ANNOTATION_CLIPS = [
 // Configure where annotations are sent after participants submit.
 // Replace `endpoint` with your secure collection URL.
 window.ANNOTATION_SUBMISSION = {
-  endpoint: "https://mwqbclmfzkfyiufykstc.supabase.co/functions/v1/bright-function",
+  endpoint: "https://formspree.io/f/mblqdnrw", // ← your actual Formspree endpoint
   method: "POST",
   headers: {
-    Authorization: "Bearer banana123"
+    "Content-Type": "application/json"
   },
   additionalFields: {},
-  bodyWrapper: "annotation",
+  bodyWrapper: "annotation"
 };
+
