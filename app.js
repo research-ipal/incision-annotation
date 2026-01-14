@@ -1,6 +1,6 @@
 const participantIdInput = document.getElementById("participantIdInput");
 const participantIdStatus = document.getElementById("participantIdStatus");
-const clipSelect = document.getElementById("clipSelect");
+// clipSelect removed
 const replayBtn = document.getElementById("replayBtn");
 const video = document.getElementById("caseVideo");
 const finalFrameCanvas = document.getElementById("finalFrame");
@@ -12,6 +12,8 @@ const annotationStatus = document.getElementById("annotationStatus");
 const toastTemplate = document.getElementById("toastTemplate");
 const submitAnnotationBtn = document.getElementById("submitAnnotationBtn");
 const submissionStatus = document.getElementById("submissionStatus");
+const clipProgress = document.getElementById("clipProgress");
+const completionCard = document.getElementById("completionCard");
 
 const submissionConfig = window.ANNOTATION_SUBMISSION || {};
 const baseAdditionalFields = { ...(submissionConfig.additionalFields || {}) };
@@ -32,6 +34,9 @@ let submissionInFlight = false;
 let capturedFrameTimeValue = 0;
 let helperVideo = null;
 let helperSeekAttempted = false;
+
+// NEW: Track current index
+let currentClipIndex = 0;
 
 function showToast(message) {
   const toast = toastTemplate.content.firstElementChild.cloneNode(true);
@@ -58,49 +63,30 @@ function getClips() {
   return clips;
 }
 
-function populateClipSelect(clips) {
-  clipSelect.innerHTML = "";
-  if (clips.length === 0) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "Add clips in clip-config.js";
-    clipSelect.appendChild(option);
-    clipSelect.disabled = true;
-    videoStatus.textContent = "No clip configured.";
+// CHANGED: Load by index instead of dropdown selection
+function loadClipByIndex(index) {
+  const clips = getClips();
+  
+  if (index >= clips.length) {
+    handleAllClipsCompleted();
     return;
   }
 
-  clips.forEach((clip, index) => {
-    const option = document.createElement("option");
-    option.value = clip.id ?? `clip-${index}`;
-    option.textContent = clip.label ?? option.value;
-    option.dataset.src = clip.src;
-    option.dataset.poster = clip.poster || "";
-    clipSelect.appendChild(option);
-  });
-
-  clipSelect.disabled = false;
-
-  const params = new URLSearchParams(window.location.search);
-  const clipId = params.get("clip");
-  if (clipId) {
-    const match = [...clipSelect.options].find((opt) => opt.value === clipId);
-    if (match) {
-      clipSelect.value = clipId;
-      loadSelectedClip();
-      return;
-    }
+  const clip = clips[index];
+  
+  // Update Progress Text
+  if (clipProgress) {
+    clipProgress.textContent = `(Clip ${index + 1} of ${clips.length})`;
   }
 
-  clipSelect.selectedIndex = 0;
-  loadSelectedClip();
-}
+  // Update Button Text for Last Clip
+  if (index === clips.length - 1) {
+    submitAnnotationBtn.textContent = "Submit & Finish";
+  } else {
+    submitAnnotationBtn.textContent = "Submit & Next Clip";
+  }
 
-function loadSelectedClip() {
-  const option = clipSelect.selectedOptions[0];
-  if (!option) return;
-
-  const src = option.dataset.src;
+  const src = clip.src;
   if (!src) {
     videoStatus.textContent = "Clip source missing.";
     return;
@@ -109,10 +95,10 @@ function loadSelectedClip() {
   resetAnnotationState();
 
   currentClip = {
-    id: option.value,
-    label: option.textContent,
+    id: clip.id,
+    label: clip.label,
     src,
-    poster: option.dataset.poster || "",
+    poster: clip.poster || "",
   };
 
   canvasContainer.hidden = true;
@@ -131,6 +117,13 @@ function loadSelectedClip() {
   videoStatus.textContent = "Loading clip…";
   replayBtn.disabled = true;
   prepareHelperVideo();
+}
+
+function handleAllClipsCompleted() {
+  // Hide main UI elements
+  document.querySelectorAll('.card:not(#completionCard)').forEach(el => el.hidden = true);
+  completionCard.hidden = false;
+  showToast("All clips completed!");
 }
 
 function looksLikeLocalPath(value) {
@@ -585,18 +578,19 @@ function clearLine() {
   updateSubmissionPayload();
 }
 
+// CHANGED: Now returns a boolean Promise (true = success, false = fail)
 async function submitAnnotation() {
   if (!latestPayload) {
     showToast("Draw the incision before submitting.");
-    return;
+    return false;
   }
 
   if (!submissionConfig.endpoint) {
     showToast("Submission endpoint missing. Update clip-config.js.");
-    return;
+    return false;
   }
 
-  if (submissionInFlight) return;
+  if (submissionInFlight) return false;
 
   submissionInFlight = true;
   submitAnnotationBtn.disabled = true;
@@ -648,15 +642,26 @@ async function submitAnnotation() {
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
-    submissionStatus.textContent = "Annotation submitted. Thank you!";
-    showToast("Annotation sent to investigator.");
+    submissionStatus.textContent = "Annotation submitted.";
+    showToast("Annotation sent.");
+    return true; // SUCCESS
   } catch (error) {
     submissionStatus.textContent = "Submission failed. Please try again.";
     submitAnnotationBtn.disabled = false;
-    showToast("Unable to submit annotation. Check your connection and try again.");
+    showToast("Unable to submit. Check connection.");
     console.error(error);
+    return false; // FAILURE
   } finally {
     submissionInFlight = false;
+  }
+}
+
+// NEW: Wrapper to handle submit, then load next
+async function handleSubmitAndNext() {
+  const success = await submitAnnotation();
+  if (success) {
+    currentClipIndex++;
+    loadClipByIndex(currentClipIndex);
   }
 }
 
@@ -692,7 +697,9 @@ function buildAdditionalFields(filenameHint) {
   return fields;
 }
 
-clipSelect.addEventListener("change", loadSelectedClip);
+// Replaced clipSelect listener with simple load
+// clipSelect.addEventListener("change", loadSelectedClip); 
+
 replayBtn.addEventListener("click", handleReplay);
 video.addEventListener("loadeddata", handleVideoLoaded);
 video.addEventListener("error", handleVideoError, { once: false });
@@ -700,7 +707,9 @@ video.addEventListener("play", handleVideoPlay);
 video.addEventListener("timeupdate", handleVideoTimeUpdate);
 video.addEventListener("ended", handleVideoEnded);
 clearLineBtn.addEventListener("click", clearLine);
-submitAnnotationBtn.addEventListener("click", submitAnnotation);
+
+// CHANGED: Use the wrapper function
+submitAnnotationBtn.addEventListener("click", handleSubmitAndNext);
 
 participantIdInput.addEventListener("input", (event) => {
   applyParticipantId(event.target.value);
@@ -723,6 +732,7 @@ if (window.PointerEvent) {
   annotationCanvas.addEventListener("touchcancel", handlePointerUp, { passive: false });
 }
 
+// INITIALIZATION
 const availableClips = getClips();
-populateClipSelect(availableClips);
+loadClipByIndex(0); // Start at index 0
 applyParticipantId(participantIdInput.value);
