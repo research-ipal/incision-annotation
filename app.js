@@ -178,7 +178,7 @@ function resetAnnotationState() {
   if (submissionConfig.endpoint) {
     submissionStatus.textContent = participantIdValue
       ? "Draw the incision on the frozen frame to enable submission."
-      : "Enter your participant ID above before submitting.";
+      : "Enter your email above before submitting.";
   } else {
     submissionStatus.textContent =
       "Investigator submission endpoint not configured. Update clip-config.js.";
@@ -397,7 +397,7 @@ function handleReplay() {
   if (submissionConfig.endpoint) {
     submissionStatus.textContent = participantIdValue
       ? "Draw the incision on the frozen frame to enable submission."
-      : "Enter your participant ID above before submitting.";
+      : "Enter your email above before submitting.";
   } else {
     submissionStatus.textContent =
       "Investigator submission endpoint not configured. Update clip-config.js.";
@@ -472,7 +472,7 @@ function updateSubmissionPayload() {
     if (frameCaptured && submissionConfig.endpoint) {
       submissionStatus.textContent = participantIdValue
         ? "Draw the incision and release to submit."
-        : "Enter your participant ID above before submitting.";
+        : "Enter your email above before submitting.";
     }
     return;
   }
@@ -523,7 +523,7 @@ function updateSubmissionPayload() {
 
   if (!participantIdValue) {
     submitAnnotationBtn.disabled = true;
-    submissionStatus.textContent = "Enter your participant ID above before submitting.";
+    submissionStatus.textContent = "Enter your email above before submitting.";
     return;
   }
 
@@ -669,10 +669,10 @@ function applyParticipantId(rawValue) {
   participantIdValue = (rawValue || "").trim();
   if (participantIdValue) {
     participantIdStatus.textContent =
-      "Participant ID recorded. Continue with the steps below.";
+      "Participant email recorded. Continue with the steps below.";
   } else {
     participantIdStatus.textContent =
-      "Enter the ID provided by the study team. This is required before submitting your annotation.";
+      "Enter your email. This is required before submitting your annotation.";
   }
   updateSubmissionPayload();
 }
