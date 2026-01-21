@@ -153,7 +153,27 @@
         </p>
       </div>
     </section>
-    
+
+<section id="confidenceSection" class="card" hidden>
+  <header class="card__header">
+    <h2>5. Final Question</h2>
+  </header>
+  <div class="card__body card__body--stack">
+    <label class="field">
+      <span class="field__label">How confident did you feel drawing the incisions? (1–5)</span>
+      <select id="confidenceInput" class="field__control" required>
+        <option value="">Select one</option>
+        <option value="1">1 – Not confident</option>
+        <option value="2">2</option>
+        <option value="3">3 – Somewhat confident</option>
+        <option value="4">4</option>
+        <option value="5">5 – Very confident</option>
+      </select>
+    </label>
+    <button id="submitConfidenceBtn" class="primary">Submit Confidence</button>
+  </div>
+</section>
+
     <section class="card">
 
     <section id="completionCard" class="card" hidden style="text-align: center; padding: 3rem 1rem;">
@@ -169,20 +189,6 @@
 
   <script src="clip-config.js"></script>
   <script src="app.js"></script>
-
-  <div id="confidenceSection" hidden>
-  <label for="confidenceInput">How confident did you feel drawing the incisions? (1–5)</label>
-  <select id="confidenceInput" required>
-    <option value="">Select one</option>
-    <option value="1">1 – Not confident</option>
-    <option value="2">2</option>
-    <option value="3">3 – Somewhat confident</option>
-    <option value="4">4</option>
-    <option value="5">5 – Very confident</option>
-  </select>
-  <br>
-  <button id="submitConfidenceBtn">Submit Confidence</button>
-</div>
 
 </body>
 </html>
