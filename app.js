@@ -120,10 +120,11 @@ function loadClipByIndex(index) {
 }
 
 function handleAllClipsCompleted() {
-  // Hide main UI elements
-  document.querySelectorAll('.card:not(#completionCard)').forEach(el => el.hidden = true);
-  completionCard.hidden = false;
-  showToast("All clips completed!");
+  // Hide the annotation interface
+  document.querySelectorAll('.card:not(#confidenceSection)').forEach(el => el.hidden = true);
+  
+  // Show confidence question
+  document.getElementById("confidenceSection").hidden = false;
 }
 
 function looksLikeLocalPath(value) {
@@ -725,6 +726,46 @@ video.addEventListener("play", handleVideoPlay);
 video.addEventListener("timeupdate", handleVideoTimeUpdate);
 video.addEventListener("ended", handleVideoEnded);
 clearLineBtn.addEventListener("click", clearLine);
+
+// Confidence question
+document.getElementById("submitConfidenceBtn").addEventListener("click", async () => {
+  const confidenceInput = document.getElementById("confidenceInput").value;
+
+  if (!confidenceInput) {
+    showToast("Please select a confidence level before submitting.");
+    return;
+  }
+
+  const participantId = participantIdInput.value.trim();
+
+  const body = {
+    participantId: participantId,
+    confidenceFinal: confidenceInput, // This is the final confidence rating
+    generatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const response = await fetch(submissionConfig.endpoint, {
+      method: submissionConfig.method || "POST",
+      headers: submissionConfig.headers || { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        annotation: body, // wrap it like the other submissions
+      }),
+    });
+
+    if (!response.ok) throw new Error("Submission failed.");
+
+    showToast("Confidence response submitted. Thank you!");
+    
+    // Hide question & show final message
+    document.getElementById("confidenceSection").hidden = true;
+    completionCard.hidden = false;
+
+  } catch (error) {
+    showToast("Could not submit confidence. Try again.");
+    console.error(error);
+  }
+});
 
 // CHANGED: Use the wrapper function
 submitAnnotationBtn.addEventListener("click", handleSubmitAndNext);
